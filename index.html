@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Carnet Kazakhstan</title>
+<meta name="theme-color" content="#F6F7F8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111416" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Kazakhstan">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  :root {
+    --bg: #F6F7F8;
+    --surface: #FFFFFF;
+    --text: #15191C;
+    --muted: #6E777D;
+    --line: #E4E7EA;
+    --accent: #0A8FA6;
+    --folder: #C9D3D8;
+    --danger: #C43D3D;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #111416;
+      --surface: #1A1F22;
+      --text: #E9EDEF;
+      --muted: #8B959B;
+      --line: #2A3135;
+      --accent: #3DB8CC;
+      --folder: #3A454B;
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  button, input, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; background: none; border: 0; padding: 0; }
+
+  header { position: sticky; top: 0; z-index: 5; background: var(--bg);
+    padding: calc(env(safe-area-inset-top) + 10px) 16px 8px; border-bottom: 1px solid var(--line); }
+  .bar { display: flex; align-items: center; gap: 8px; min-height: 36px; }
+  .back { color: var(--accent); font-size: 16px; padding: 6px 8px 6px 0; }
+  .bar h1 { flex: 1; margin: 0; font-size: 22px; font-weight: 700;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .link { color: var(--accent); font-size: 15px; padding: 6px 0 6px 8px; }
+  .crumbs { font-size: 13px; color: var(--muted); margin: 2px 0 8px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .crumbs button { color: var(--muted); }
+  .search { width: 100%; border: 1px solid var(--line); background: var(--surface);
+    border-radius: 10px; padding: 9px 12px; font-size: 15px; }
+
+  main { max-width: 760px; margin: 0 auto; padding: 0 0 calc(env(safe-area-inset-bottom) + 96px); }
+  .list { background: var(--surface); border-bottom: 1px solid var(--line); }
+  .row { display: flex; align-items: center; gap: 12px; padding: 10px 8px 10px 16px;
+    border-top: 1px solid var(--line); width: 100%; text-align: left; }
+  .row:first-child { border-top: 0; }
+  .row:active { background: var(--line); }
+  .row .main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; text-align: left; }
+  .row .txt { min-width: 0; flex: 1; }
+  .row .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .row .meta { font-size: 12px; color: var(--muted); margin-top: 1px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .more { color: var(--muted); font-size: 20px; letter-spacing: 1px; padding: 6px 10px; }
+
+  /* Vignettes: formes simples, pas d'emoji */
+  .kind { flex: none; width: 36px; height: 36px; border-radius: 6px; display: grid; place-items: center;
+    font-size: 9px; font-weight: 700; letter-spacing: .4px; color: var(--muted);
+    border: 1px solid var(--line); background: var(--bg); overflow: hidden; }
+  .kind img { width: 100%; height: 100%; object-fit: cover; }
+  .kind.folder { border: 0; background: none; position: relative; }
+  .kind.folder::before { content: ""; position: absolute; left: 2px; right: 2px; top: 8px; bottom: 5px;
+    background: var(--folder); border-radius: 3px 5px 5px 5px; }
+  .kind.folder::after { content: ""; position: absolute; left: 2px; top: 5px; width: 14px; height: 5px;
+    background: var(--folder); border-radius: 3px 3px 0 0; }
+  .kind.pdf { color: var(--danger); }
+  .kind.note { color: var(--accent); }
+
+  .section-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px;
+    padding: 18px 16px 6px; }
+  .empty { color: var(--muted); text-align: center; padding: 56px 24px; font-size: 15px; }
+
+  .add { position: fixed; right: 18px; bottom: calc(env(safe-area-inset-bottom) + 18px); z-index: 6;
+    width: 56px; height: 56px; border-radius: 50%; background: var(--accent); color: #fff;
+    font-size: 30px; line-height: 56px; text-align: center; box-shadow: 0 4px 14px rgba(0,0,0,.2); }
+
+  /* Menu du bas */
+  .backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 30; display: none; }
+  .backdrop.open { display: block; }
+  .menu { position: fixed; left: 8px; right: 8px; bottom: calc(env(safe-area-inset-bottom) + 8px);
+    z-index: 31; max-width: 480px; margin: 0 auto; display: none; }
+  .menu.open { display: block; }
+  .menu .grp { background: var(--surface); border-radius: 14px; overflow: hidden; margin-top: 8px; }
+  .menu .title { font-size: 13px; color: var(--muted); text-align: center; padding: 12px 16px;
+    border-bottom: 1px solid var(--line); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .menu button { display: block; width: 100%; padding: 15px; text-align: center; font-size: 17px;
+    color: var(--accent); border-top: 1px solid var(--line); }
+  .menu .grp button:first-child, .menu .title + button { border-top: 0; }
+  .menu button.danger { color: var(--danger); }
+  .menu button.cancel { font-weight: 600; }
+
+  /* Écrans plein écran */
+  .sheet { position: fixed; inset: 0; background: var(--bg); z-index: 20; display: none; flex-direction: column; }
+  .sheet.open { display: flex; }
+  .sheet-head { display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--line);
+    background: var(--bg); padding: calc(env(safe-area-inset-top) + 8px) 12px 8px; }
+  .sheet-head h2 { flex: 1; margin: 0; font-size: 16px; font-weight: 600; text-align: center;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sheet-head .link, .sheet-head .back { min-width: 72px; }
+  .sheet-head .link { text-align: right; }
+  .sheet-body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+    padding: 16px 16px calc(env(safe-area-inset-bottom) + 24px); }
+  .sheet-body > * { max-width: 760px; margin-left: auto; margin-right: auto; }
+
+  .viewer img { display: block; max-width: 100%; margin: 0 auto; border-radius: 6px; }
+  .viewer iframe { display: block; width: 100%; height: calc(100vh - 170px); border: 1px solid var(--line);
+    border-radius: 6px; background: #fff; }
+  .note-read { white-space: pre-wrap; word-wrap: break-word; font-size: 16px; line-height: 1.5;
+    user-select: text; -webkit-user-select: text; }
+  .note-read a { color: var(--accent); }
+  .note-edit { width: 100%; min-height: calc(100vh - 170px); border: 0; background: transparent;
+    resize: none; outline: none; font-size: 16px; line-height: 1.5; }
+  .actions { display: flex; gap: 8px; margin-top: 14px; }
+  .btn { flex: 1; display: block; text-align: center; text-decoration: none; padding: 11px;
+    border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-size: 15px; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .hint { color: var(--muted); font-size: 14px; }
+  .block { margin-bottom: 26px; }
+  .block h3 { font-size: 15px; margin: 0 0 6px; }
+  .field { width: 100%; border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 10px 12px; }
+
+  .toast { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 88px); transform: translateX(-50%);
+    background: var(--text); color: var(--bg); padding: 9px 16px; border-radius: 999px; font-size: 14px;
+    z-index: 50; opacity: 0; transition: opacity .2s; pointer-events: none; white-space: nowrap; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="bar">
+    <button class="back" id="btnUp" hidden>‹ Retour</button>
+    <h1 id="title">Carnet Kazakhstan</h1>
+    <button class="link" id="btnSettings">Réglages</button>
+  </div>
+  <div class="crumbs" id="crumbs" hidden></div>
+  <input class="search" id="search" type="search" placeholder="Rechercher dans tous les fichiers" autocomplete="off">
+</header>
+
+<main id="main"></main>
+<button class="add" id="btnAdd" aria-label="Ajouter">+</button>
+<input type="file" id="fileInput" multiple hidden>
+<input type="file" id="importInput" accept=".json,application/json" hidden>
+
+<div class="backdrop" id="backdrop"></div>
+<div class="menu" id="menu"></div>
+<div class="toast" id="toast"></div>
+
+<!-- Aperçu d'un fichier ou d'une note -->
+<section class="sheet" id="viewer">
+  <div class="sheet-head">
+    <button class="back" id="viewerBack">‹ Retour</button>
+    <h2 id="viewerTitle"></h2>
+    <button class="link" id="viewerAction"></button>
+  </div>
+  <div class="sheet-body"><div class="viewer" id="viewerBody"></div></div>
+</section>
+
+<!-- Choix d'un dossier de destination -->
+<section class="sheet" id="mover">
+  <div class="sheet-head">
+    <button class="back" id="moverCancel">Annuler</button>
+    <h2>Déplacer vers</h2>
+    <span style="min-width:72px"></span>
+  </div>
+  <div class="sheet-body" style="padding-left:0;padding-right:0"><div class="list" id="moverList"></div></div>
+</section>
+
+<!-- Réglages -->
+<section class="sheet" id="settings">
+  <div class="sheet-head">
+    <button class="back" id="settingsBack">‹ Retour</button>
+    <h2>Réglages</h2>
+    <span style="min-width:72px"></span>
+  </div>
+  <div class="sheet-body">
+    <div>
+      <div class="block">
+        <h3>Sauvegarde</h3>
+        <p class="hint">Tout est stocké uniquement sur ce téléphone. Exportez une sauvegarde avant le départ
+          et gardez-la ailleurs (mail, Drive, ordinateur) pour pouvoir tout restaurer si besoin.</p>
+        <div class="actions">
+          <button class="btn primary" id="btnExport">Exporter</button>
+          <button class="btn" id="btnImport">Restaurer</button>
+        </div>
+      </div>
+      <div class="block">
+        <h3>Stockage</h3>
+        <p class="hint" id="storageInfo"></p>
+      </div>
+      <div class="block">
+        <h3>Installer sur l'écran d'accueil</h3>
+        <p class="hint">iPhone : ouvrir dans Safari, bouton Partager, puis « Sur l'écran d'accueil ».<br>
+          Android : ouvrir dans Chrome, menu, puis « Installer l'application ».<br>
+          Une fois installée, l'app fonctionne sans connexion.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+// ---------- Base de données locale (IndexedDB) ----------
+// Chaque élément est un "nœud" : dossier, fichier importé ou note texte.
+const DB_NAME = 'carnet-kz-drive', STORE = 'nodes';
+let dbp;
+function db() {
+  if (!dbp) dbp = new Promise((res, rej) => {
+    const r = indexedDB.open(DB_NAME, 1);
+    r.onupgradeneeded = () => r.result.createObjectStore(STORE, { keyPath: 'id' });
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  });
+  return dbp;
+}
+async function run(mode, fn) {
+  const d = await db();
+  return new Promise((res, rej) => {
+    const t = d.transaction(STORE, mode);
+    const req = fn(t.objectStore(STORE));
+    t.oncomplete = () => res(req?.result);
+    t.onerror = t.onabort = () => rej(t.error);
+  });
+}
+const dbAll = () => run('readonly', s => s.getAll());
+const dbPut = n => run('readwrite', s => s.put(n));
+const dbDel = ids => run('readwrite', s => { ids.forEach(id => s.delete(id)); });
+
+// ---------- État ----------
+let nodes = [];
+let cwd = null;          // dossier courant (null = racine)
+let query = '';
+let current = null;      // nœud ouvert dans l'aperçu
+let editingNote = false;
+let urls = [];
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const byId = id => nodes.find(n => n.id === id);
+const children = pid => nodes.filter(n => (n.parentId ?? null) === pid);
+function objUrl(blob) { const u = URL.createObjectURL(blob); urls.push(u); return u; }
+function freeUrls() { urls.forEach(URL.revokeObjectURL); urls = []; }
+function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2000); }
+function size(b) { return b < 1024 ? b + ' o' : b < 1048576 ? Math.round(b / 1024) + ' Ko' : (b / 1048576).toFixed(1) + ' Mo'; }
+function when(ts) { return new Date(ts).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }); }
+function ext(name) { const m = /\.([a-z0-9]{1,5})$/i.exec(name); return m ? m[1].toUpperCase() : ''; }
+function path(id) { const p = []; let n = byId(id); while (n) { p.unshift(n); n = byId(n.parentId); } return p; }
+function descendants(id) { const out = []; children(id).forEach(c => { out.push(c.id); if (c.type === 'folder') out.push(...descendants(c.id)); }); return out; }
+function isImage(n) { return n.type === 'file' && n.mime.startsWith('image/'); }
+function isPdf(n) { return n.type === 'file' && (n.mime === 'application/pdf' || ext(n.name) === 'PDF'); }
+function isText(n) { return n.type === 'file' && (n.mime.startsWith('text/') || ['TXT', 'EML', 'CSV'].includes(ext(n.name))); }
+
+// ---------- Affichage de la liste ----------
+function kindHtml(n) {
+  if (n.type === 'folder') return `<span class="kind folder"></span>`;
+  if (n.type === 'note') return `<span class="kind note">NOTE</span>`;
+  if (isImage(n)) return `<span class="kind"><img src="${objUrl(n.blob)}" alt="" loading="lazy"></span>`;
+  if (isPdf(n)) return `<span class="kind pdf">PDF</span>`;
+  return `<span class="kind">${esc(ext(n.name) || 'FICH')}</span>`;
+}
+function metaOf(n, withPath) {
+  const parts = [];
+  if (withPath) parts.push(path(n.parentId).map(p => p.name).join(' / ') || 'Accueil');
+  if (n.type === 'folder') { const c = children(n.id).length; parts.push(c ? c + (c > 1 ? ' éléments' : ' élément') : 'Vide'); }
+  else if (n.type === 'note') parts.push('Note', when(n.updatedAt));
+  else parts.push(size(n.size), when(n.updatedAt));
+  return parts.join(' · ');
+}
+function rowHtml(n, withPath) {
+  return `<div class="row" data-id="${n.id}">
+    <button class="main" data-open="${n.id}">${kindHtml(n)}
+      <span class="txt"><div class="name">${esc(n.name)}</div><div class="meta">${esc(metaOf(n, withPath))}</div></span>
+    </button>
+    <button class="more" data-more="${n.id}" aria-label="Options">···</button>
+  </div>`;
+}
+function sortNodes(list) {
+  return list.sort((a, b) => (a.type === 'folder' ? 0 : 1) - (b.type === 'folder' ? 0 : 1)
+    || a.name.localeCompare(b.name, 'fr', { numeric: true, sensitivity: 'base' }));
+}
+
+function render() {
+  freeUrls();
+  const q = query.trim().toLowerCase();
+  const folder = byId(cwd);
+  $('#title').textContent = folder ? folder.name : 'Carnet Kazakhstan';
+  $('#btnUp').hidden = !folder;
+  const crumbs = path(cwd);
+  $('#crumbs').hidden = crumbs.length < 2;
+  $('#crumbs').innerHTML = [`<button data-go="">Accueil</button>`, ...crumbs.slice(0, -1).map(p => `<button data-go="${p.id}">${esc(p.name)}</button>`)].join(' / ');
+
+  let html;
+  if (q) {
+    const hits = nodes.filter(n => n.name.toLowerCase().includes(q) || (n.type === 'note' && n.text.toLowerCase().includes(q)));
+    html = hits.length
+      ? `<div class="section-label">${hits.length} résultat${hits.length > 1 ? 's' : ''}</div><div class="list">${sortNodes(hits).map(n => rowHtml(n, true)).join('')}</div>`
+      : `<div class="empty">Aucun résultat pour « ${esc(query)} »</div>`;
+  } else {
+    const list = sortNodes(children(cwd));
+    html = list.length
+      ? `<div class="list" style="margin-top:12px">${list.map(n => rowHtml(n)).join('')}</div>`
+      : `<div class="empty">Ce dossier est vide.<br>Appuyez sur + pour importer un fichier, créer une note ou un dossier.</div>`;
+  }
+  $('#main').innerHTML = html;
+}
+
+async function reload() { nodes = await dbAll(); render(); }
+function go(id) { cwd = id || null; query = ''; $('#search').value = ''; render(); scrollTo(0, 0); }
+
+// ---------- Menu du bas ----------
+function menu(title, items) {
+  $('#menu').innerHTML = `<div class="grp">${title ? `<div class="title">${esc(title)}</div>` : ''}${
+    items.map((it, i) => `<button data-i="${i}" class="${it.danger ? 'danger' : ''}">${esc(it.label)}</button>`).join('')
+  }</div><div class="grp"><button class="cancel" data-i="-1">Annuler</button></div>`;
+  $('#menu').classList.add('open'); $('#backdrop').classList.add('open');
+  $('#menu').onclick = e => {
+    const b = e.target.closest('[data-i]'); if (!b) return;
+    closeMenu();
+    const it = items[+b.dataset.i]; if (it) it.run();
+  };
+}
+function closeMenu() { $('#menu').classList.remove('open'); $('#backdrop').classList.remove('open'); }
+$('#backdrop').onclick = closeMenu;
+
+// ---------- Actions ----------
+function uniqueName(name, pid, skipId) {
+  const taken = new Set(children(pid).filter(n => n.id !== skipId).map(n => n.name.toLowerCase()));
+  if (!taken.has(name.toLowerCase())) return name;
+  const m = /^(.*?)(\.[^.]+)?$/.exec(name);
+  for (let i = 2; ; i++) { const c = `${m[1]} (${i})${m[2] || ''}`; if (!taken.has(c.toLowerCase())) return c; }
+}
+async function newFolder() {
+  const name = prompt('Nom du dossier', 'Nouveau dossier');
+  if (!name?.trim()) return;
+  await dbPut({ id: uid(), parentId: cwd, type: 'folder', name: uniqueName(name.trim(), cwd), updatedAt: Date.now() });
+  reload();
+}
+async function newNote() {
+  const n = { id: uid(), parentId: cwd, type: 'note', name: uniqueName('Nouvelle note', cwd), text: '', updatedAt: Date.now() };
+  await dbPut(n); await reload();
+  openNode(n.id, true);
+}
+$('#fileInput').onchange = async e => {
+  const files = [...e.target.files]; e.target.value = '';
+  if (!files.length) return;
+  try {
+    for (const f of files) {
+      const blob = new Blob([await f.arrayBuffer()], { type: f.type || 'application/octet-stream' });
+      await dbPut({ id: uid(), parentId: cwd, type: 'file', name: uniqueName(f.name, cwd), mime: blob.type, size: blob.size, blob, updatedAt: Date.now() });
+      nodes = await dbAll();
+    }
+    toast(files.length > 1 ? files.length + ' fichiers importés' : 'Fichier importé');
+  } catch (err) { alert('Import impossible (stockage plein ?)\n' + err.message); }
+  render();
+};
+async function rename(n) {
+  const name = prompt('Renommer', n.name);
+  if (!name?.trim() || name.trim() === n.name) return;
+  n.name = uniqueName(name.trim(), n.parentId ?? null, n.id); n.updatedAt = Date.now();
+  await dbPut(n); await reload();
+  if (current?.id === n.id) $('#viewerTitle').textContent = n.name;
+}
+async function remove(n) {
+  const inside = n.type === 'folder' ? descendants(n.id) : [];
+  const msg = n.type === 'folder' && inside.length
+    ? `Supprimer le dossier « ${n.name} » et les ${inside.length} éléments qu'il contient ?`
+    : `Supprimer « ${n.name} » ?`;
+  if (!confirm(msg)) return;
+  await dbDel([n.id, ...inside]);
+  if (current?.id === n.id) closeViewer();
+  await reload(); toast('Supprimé');
+}
+async function share(n) {
+  const file = n.type === 'note'
+    ? new File([n.text], n.name + '.txt', { type: 'text/plain' })
+    : new File([n.blob], n.name, { type: n.mime });
+  if (navigator.canShare?.({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: n.name }); } catch (e) { if (e.name !== 'AbortError') toast('Partage impossible'); }
+  } else {
+    const a = document.createElement('a'); a.href = URL.createObjectURL(file); a.download = file.name; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  }
+}
+function options(n) {
+  const items = [];
+  if (n.type !== 'folder') items.push({ label: 'Partager ou enregistrer', run: () => share(n) });
+  items.push({ label: 'Renommer', run: () => rename(n) });
+  items.push({ label: 'Déplacer', run: () => openMover(n) });
+  items.push({ label: 'Supprimer', danger: true, run: () => remove(n) });
+  menu(n.name, items);
+}
+
+// ---------- Déplacer ----------
+let moving = null;
+function openMover(n) {
+  moving = n;
+  const banned = new Set(n.type === 'folder' ? [n.id, ...descendants(n.id)] : []);
+  const rows = [];
+  const walk = (pid, depth) => sortNodes(children(pid).filter(c => c.type === 'folder' && !banned.has(c.id))).forEach(f => {
+    rows.push({ id: f.id, name: f.name, depth }); walk(f.id, depth + 1);
+  });
+  walk(null, 1);
+  const here = n.parentId ?? null;
+  $('#moverList').innerHTML = [{ id: '', name: 'Accueil', depth: 0 }, ...rows].map(r =>
+    `<button class="row" data-dest="${r.id}" style="padding-left:${16 + r.depth * 20}px" ${(r.id || null) === here ? 'disabled style="opacity:.4;padding-left:' + (16 + r.depth * 20) + 'px"' : ''}>
+      <span class="main"><span class="kind folder"></span><span class="txt"><div class="name">${esc(r.name)}</div></span></span></button>`
+  ).join('');
+  $('#mover').classList.add('open');
+}
+$('#moverList').onclick = async e => {
+  const b = e.target.closest('[data-dest]'); if (!b || b.disabled) return;
+  const dest = b.dataset.dest || null;
+  moving.parentId = dest; moving.name = uniqueName(moving.name, dest, moving.id); moving.updatedAt = Date.now();
+  await dbPut(moving);
+  $('#mover').classList.remove('open');
+  await reload(); toast('Déplacé vers ' + (byId(dest)?.name || 'Accueil'));
+};
+$('#moverCancel').onclick = () => $('#mover').classList.remove('open');
+
+// ---------- Aperçu ----------
+function linkify(s) {
+  return esc(s)
+    .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>')
+    .replace(/(^|[\s:(])(\+\d[\d .\-]{7,}\d)/g, (m, p, t) => `${p}<a href="tel:${t.replace(/[^\d+]/g, '')}">${t}</a>`);
+}
+async function openNode(id, edit = false) {
+  const n = byId(id); if (!n) return;
+  if (n.type === 'folder') return go(n.id);
+  current = n; editingNote = edit && n.type === 'note';
+  $('#viewerTitle').textContent = n.name;
+  const body = $('#viewerBody');
+  const act = $('#viewerAction');
+  if (n.type === 'note') {
+    act.textContent = editingNote ? 'OK' : 'Modifier';
+    body.innerHTML = editingNote
+      ? `<textarea class="note-edit" id="noteText" placeholder="Collez ici le texte d'un mail, une adresse, un numéro de réservation...">${esc(n.text)}</textarea>`
+      : (n.text ? `<div class="note-read">${linkify(n.text)}</div>` : `<p class="hint">Note vide.</p>`)
+        + `<div class="actions"><button class="btn" id="copyNote">Copier le texte</button><button class="btn" id="moreNote">Options</button></div>`;
+    if (editingNote) setTimeout(() => $('#noteText').focus(), 50);
+    else {
+      $('#copyNote').onclick = () => navigator.clipboard.writeText(n.text).then(() => toast('Texte copié'));
+      $('#moreNote').onclick = () => options(n);
+    }
+  } else {
+    act.textContent = 'Options';
+    const u = objUrl(n.blob);
+    let h = '';
+    if (isImage(n)) h = `<img src="${u}" alt="${esc(n.name)}">`;
+    else if (isPdf(n)) h = `<iframe src="${u}" title="${esc(n.name)}"></iframe>`;
+    else if (isText(n)) h = `<div class="note-read">${linkify(await n.blob.text())}</div>`;
+    else h = `<p class="hint">Aperçu non disponible pour ce type de fichier.</p>`;
+    h += `<div class="actions"><a class="btn" href="${u}" target="_blank">Ouvrir en plein écran</a><button class="btn" id="shareFile">Partager</button></div>
+      <p class="hint" style="text-align:center">${esc(size(n.size))} · ajouté le ${esc(when(n.updatedAt))}</p>`;
+    body.innerHTML = h;
+    $('#shareFile').onclick = () => share(n);
+  }
+  $('#viewer').classList.add('open');
+}
+async function saveNote() {
+  if (!editingNote) return;
+  const text = $('#noteText').value;
+  if (text !== current.text) {
+    current.text = text; current.updatedAt = Date.now();
+    // Nomme la note d'après sa première ligne si elle s'appelle encore "Nouvelle note"
+    if (/^Nouvelle note( \(\d+\))?$/.test(current.name) && text.trim()) {
+      current.name = uniqueName(text.trim().split('\n')[0].slice(0, 60), current.parentId ?? null, current.id);
+    }
+    await dbPut(current); nodes = await dbAll();
+  }
+  editingNote = false;
+}
+$('#viewerAction').onclick = async () => {
+  if (current.type === 'note') {
+    if (editingNote) { await saveNote(); render(); openNode(current.id); }
+    else openNode(current.id, true);
+  } else options(current);
+};
+async function closeViewer() {
+  await saveNote();
+  $('#viewer').classList.remove('open'); current = null;
+  render();
+}
+$('#viewerBack').onclick = closeViewer;
+
+// ---------- Réglages et sauvegarde ----------
+function toB64(blob) { return new Promise(r => { const f = new FileReader(); f.onload = () => r(f.result.split(',')[1]); f.readAsDataURL(blob); }); }
+function fromB64(b64, type) { const s = atob(b64), a = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) a[i] = s.charCodeAt(i); return new Blob([a], { type }); }
+async function showStorage() {
+  const files = nodes.filter(n => n.type === 'file'), notes = nodes.filter(n => n.type === 'note');
+  let t = `${files.length} fichier(s), ${notes.length} note(s), ${nodes.length - files.length - notes.length} dossier(s).`;
+  if (navigator.storage?.estimate) { const { usage } = await navigator.storage.estimate(); t += ` Espace utilisé : ${size(usage)}.`; }
+  if (await navigator.storage?.persisted?.()) t += ' Stockage protégé.';
+  $('#storageInfo').textContent = t;
+}
+$('#btnSettings').onclick = () => { showStorage(); $('#settings').classList.add('open'); };
+$('#settingsBack').onclick = () => $('#settings').classList.remove('open');
+$('#btnExport').onclick = async () => {
+  toast('Préparation...');
+  const data = { app: 'carnet-kz-drive', version: 1, exportedAt: new Date().toISOString(),
+    nodes: await Promise.all(nodes.map(async n => n.blob ? { ...n, blob: undefined, data: await toB64(n.blob) } : n)) };
+  const name = `carnet-kazakhstan-${new Date().toISOString().slice(0, 10)}.json`;
+  const file = new File([JSON.stringify(data)], name, { type: 'application/json' });
+  if (navigator.canShare?.({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: name }); return; } catch (e) { if (e.name === 'AbortError') return; }
+  }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(file); a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+};
+$('#btnImport').onclick = () => $('#importInput').click();
+$('#importInput').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  try {
+    const data = JSON.parse(await f.text());
+    if (data.app !== 'carnet-kz-drive') throw new Error('fichier non reconnu');
+    if (!confirm(`Restaurer ${data.nodes.length} élément(s) ? Les éléments identiques seront remplacés.`)) return;
+    for (const n of data.nodes) {
+      const { data: b64, ...rest } = n;
+      await dbPut(b64 ? { ...rest, blob: fromB64(b64, n.mime) } : rest);
+    }
+    await reload(); showStorage(); toast('Sauvegarde restaurée');
+  } catch (err) { alert('Restauration impossible : ' + err.message); }
+};
+
+// ---------- Événements ----------
+$('#main').onclick = e => {
+  const more = e.target.closest('[data-more]'); if (more) return options(byId(more.dataset.more));
+  const open = e.target.closest('[data-open]'); if (open) openNode(open.dataset.open);
+};
+$('#crumbs').onclick = e => { const b = e.target.closest('[data-go]'); if (b) go(b.dataset.go); };
+$('#btnUp').onclick = () => go(byId(cwd)?.parentId);
+$('#search').oninput = e => { query = e.target.value; render(); };
+$('#btnAdd').onclick = () => menu(null, [
+  { label: 'Importer des fichiers', run: () => $('#fileInput').click() },
+  { label: 'Nouvelle note', run: newNote },
+  { label: 'Nouveau dossier', run: newFolder },
+]);
+
+// ---------- Démarrage ----------
+(async () => {
+  nodes = await dbAll();
+  if (!nodes.length && !localStorage.getItem('kz-init')) {
+    // Dossiers proposés au premier lancement (modifiables ou supprimables)
+    const t = Date.now();
+    for (const name of ['Vols', 'Hébergements', 'Transports', 'Passeport et visa', 'Assurance et santé', 'Activités', 'Contacts et adresses']) {
+      await dbPut({ id: uid(), parentId: null, type: 'folder', name, updatedAt: t });
+    }
+    try { localStorage.setItem('kz-init', '1'); } catch (e) {}
+    nodes = await dbAll();
+  }
+  render();
+})();
+if (navigator.storage?.persist) navigator.storage.persist();
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js');
+</script>
+</body>
+</html>
