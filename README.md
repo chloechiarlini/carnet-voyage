@@ -1,4 +1,4 @@
-# Carnet de voyage
+# Carnet de voyage Hors ligne
 
 Petit gestionnaire de documents de voyage, installable sur iPhone et Android, qui fonctionne hors ligne.
 
