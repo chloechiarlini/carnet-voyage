@@ -1,4 +1,4 @@
-# Carnet Kazakhstan
+# Carnet de voyage
 
 Petit gestionnaire de documents de voyage, installable sur iPhone et Android, qui fonctionne hors ligne.
 
